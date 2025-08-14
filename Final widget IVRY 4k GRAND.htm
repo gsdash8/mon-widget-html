@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Weather Example with Air Quality and Forecast</title>
+    <link href="https://fonts.googleapis.com/css?family=Lato:100,300" rel="stylesheet"/>
+
+    <style>
+        html, body {
+            font-size: 36px;
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            color: white;
+            font-family: "Lato", sans-serif;
+            background: linear-gradient(to right, rgb(33, 147, 176), rgb(109, 213, 237));
+        }
+
+        @media screen and (min-width: 3000px) {
+            html, body {
+                font-size: 40px;
+            }
+            #temperature {
+                font-size: 5.5rem;
+            }
+            #summary {
+                font-size: 3rem;
+            }
+        }
+
+        .container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .temperature-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .temperature {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .max-min-temperature {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fff;
+            padding-left: 30px;
+        }
+
+        .description {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 10px;
+        }
+
+        #place {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: #fff;
+        }
+
+        #temperature {
+            font-size: 5rem;
+            padding-left: 10px;
+        }
+
+        #min-temperature {
+            padding-top: 20px;
+        }
+
+        #summary {
+            font-weight: 800;
+            font-size: 2.5rem;
+        }
+
+        #forecast-container {
+            width: 80%;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .day {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            font-weight: 800;
+            font-size: 2.2rem;
+        }
+
+        .forecast-temp {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            font-weight: 800;
+            justify-content: space-evenly;
+            font-size: 1.8rem;
+        }
+
+        #air-quality-widget {
+            width: 80%;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .citation {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            color: #ccc;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="temperature-container">
+        <span id="place">Weather Today</span>
+        <div class="temperature">
+            <div class="image" id="icon0"></div>
+            <span id="temperature"></span>
+            <div class="max-min-temperature">
+                <span id="max-temperature"></span>
+                <span id="min-temperature"></span>
+            </div>
+        </div>
+        <div class="description">
+            <span id="summary"></span>
+        </div>
+    </div>
+
+    <div id="forecast-container"></div>
+
+    <div id="air-quality-widget">
+        <div class="tomorrow"
+             data-location-id="044856"
+             data-language="FR"
+             data-unit-system="METRIC"
+             data-skin="light"
+             data-widget-type="aqiPollen"
+             style="padding-bottom:22px;position:relative;">
+            <a href="https://www.tomorrow.io/weather-api/"
+               rel="nofollow noopener noreferrer"
+               target="_blank"
+               style="position: absolute; bottom: 0; transform: translateX(-50%); left: 50%;"><img
+                    alt="Powered by the Tomorrow.io Weather API"
+                    src="https://weather-website-client.tomorrow.io/img/powered-by.svg"
+                    width="250" height="18"/></a>
+        </div>
+    </div>
+</div>
+<i id="message" class="citation"></i>
+
+<script>
+    "use strict";
+    const city = "Ivry-sur-Seine, FR";
+    const units = "metric";
+    const lang = "fr";
+    const forecastDays = 6;
+
+    const temperature = document.getElementById("temperature");
+    const icon0 = document.getElementById("icon0");
+    const maxTemperature = document.getElementById("max-temperature");
+    const minTemperature = document.getElementById("min-temperature");
+    const summary = document.getElementById("summary");
+    const place = document.getElementById("place");
+    const forecastContainer = document.getElementById("forecast-container");
+    const message = document.getElementById("message");
+
+    getWeather();
+    setInterval(getWeather, 600000);
+
+    function getWeather() {
+        fetch(
+            `https://pisignage.com/api/getweather?place=${city}&units=${units}&lang=${lang}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": " application/json"
+                },
+                mode: "cors"
+            }
+        )
+        .then(res => res.json())
+        .then(data => {
+            if (!(data && data.success)) {
+                if (data.stat_message) message.textContent = data.stat_message;
+                return console.log("Could not get weather data, reason: " + data.stat_message);
+            }
+
+            message.textContent = "Prévisions météorologiques fournies par Météo France";
+            const weatherData = data.data.openweather;
+
+            if (weatherData.cityName.indexOf(",") > -1) {
+                weatherData.cityName = weatherData.cityName.slice(0, weatherData.cityName.indexOf(","));
+            }
+
+            if (place) place.textContent = weatherData.cityName;
+            if (temperature) temperature.textContent = Math.round(weatherData.main.temp) + "°";
+            if (maxTemperature) maxTemperature.textContent = Math.round(weatherData.daily[0].temp.max) + "°";
+            if (minTemperature) minTemperature.textContent = Math.round(weatherData.daily[0].temp.min) + "°";
+            if (summary) summary.textContent = weatherData.weather[0].description;
+
+            if (icon0) {
+                icon0.innerHTML = '<img src="' + weatherData.weather[0].icon + '" height="125" width="125">';
+            }
+
+            let days = weatherData.daily;
+            if (forecastContainer) {
+                forecastContainer.innerHTML = "";
+                for (let i = 1; (i <= forecastDays) && (i < days.length); i++) {
+                    const imgDiv = document.createElement("div");
+                    const img = document.createElement('img');
+                    img.setAttribute('src', days[i].weather[0].icon);
+                    img.setAttribute('height', '88');
+                    img.setAttribute('width', '88');
+                    imgDiv.appendChild(img);
+
+                    const numDiv = document.createElement("div");
+                    numDiv.textContent = Math.round(days[i].temp.max) + "°";
+
+                    const tempDiv = document.createElement("div");
+                    tempDiv.setAttribute("class", "forecast-temp");
+                    tempDiv.appendChild(numDiv);
+
+                    const dayDiv = document.createElement("div");
+                    dayDiv.textContent = convertToWeekday(days[i].dt);
+
+                    const coverDiv = document.createElement("div");
+                    coverDiv.setAttribute("class", "day");
+                    coverDiv.appendChild(dayDiv);
+                    coverDiv.appendChild(tempDiv);
+                    coverDiv.appendChild(imgDiv);
+
+                    forecastContainer.appendChild(coverDiv);
+                }
+            }
+        }).catch(error => {
+            message.textContent = error;
+        });
+    }
+
+    function convertToWeekday(sec) {
+        const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+        return days[(new Date(sec * 1000)).getDay()];
+    }
+</script>
+
+<script>
+    (function(d, s, id) {
+        if (d.getElementById(id)) {
+            if (window.__TOMORROW__) window.__TOMORROW__.renderWidget();
+            return;
+        }
+        const js = d.createElement(s);
+        js.id = id;
+        js.src = "https://www.tomorrow.io/v1/widget/sdk/sdk.bundle.min.js";
+        const fjs = d.getElementsByTagName(s)[0];
+        fjs.parentNode.insertBefore(js, fjs);
+    })(document, 'script', 'tomorrow-sdk');
+</script>
+</body>
+</html>
